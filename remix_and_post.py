@@ -182,7 +182,11 @@ def pick_variation(rng, parts, audio_dir, state=None, windows=None):
         speeds[i] = rng.choice([0.9, 1.1])
     tracks = []
     if audio_dir and os.path.isdir(audio_dir):
-        tracks = sorted(f for f in os.listdir(audio_dir) if f.lower().endswith(AUDIO_EXT))
+        skip_file = os.path.join(audio_dir, "..", "audio_skip.txt")
+        skip = set()
+        if os.path.exists(skip_file):
+            skip = {l.strip() for l in open(skip_file) if l.strip() and not l.startswith("#")}
+        tracks = sorted(f for f in os.listdir(audio_dir) if f.lower().endswith(AUDIO_EXT) and f not in skip)
     music, music_start, section = None, 0.0, None
     if tracks:
         uses = state.setdefault("audio_uses", {})

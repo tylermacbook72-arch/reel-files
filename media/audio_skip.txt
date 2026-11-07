@@ -1,0 +1,4 @@
+# Audio files left out of the rotation (one file name per line). Reason: vocals.
+playboi_slowed.m4a
+she_knows.m4a
+shootouts.m4a
