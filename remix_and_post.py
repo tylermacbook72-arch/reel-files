@@ -69,6 +69,7 @@ WHITE, YELLOW, GREEN, RED = "&HFFFFFF", "&H00D7FF", "&H5AF23C", "&H3B3BFF"
 COLORS = {"White": WHITE, "Yellow": YELLOW, "Green": GREEN, "Red": RED}
 BLACK = "&H000000"
 SEAM = 0.365  # line between face cam and chart
+FACE_CAM_HEIGHT = 0.3625  # face cam is the top 36% of the base video
 
 CAPTION_STYLES = {
     "Bold White": dict(font="Montserrat Black", size=78, color=WHITE, outline=BLACK, bord=5, shadow=0, pos=SEAM, upper=True, words=3, hl=None),
@@ -169,7 +170,12 @@ def duration(path):
                                           "-of", "default=nw=1:nk=1", path]))
 
 
-def pick_variation(rng, parts, audio_dir):
+USES_PER_SECTION = 3  # use an audio's best section 3 times, then move to its next-best section
+
+
+def pick_variation(rng, parts, audio_dir, state=None, windows=None):
+    state = state if state is not None else {}
+    windows = windows or {}
     speeds = [1.0] * len(parts)
     changed = rng.sample(range(len(parts)), k=rng.choice([1, 2]))
     for i in changed:
@@ -177,12 +183,23 @@ def pick_variation(rng, parts, audio_dir):
     tracks = []
     if audio_dir and os.path.isdir(audio_dir):
         tracks = sorted(f for f in os.listdir(audio_dir) if f.lower().endswith(AUDIO_EXT))
+    music, music_start, section = None, 0.0, None
+    if tracks:
+        uses = state.setdefault("audio_uses", {})
+        least = min(uses.get(t, 0) for t in tracks)          # spread posts evenly over all audios
+        track = rng.choice([t for t in tracks if uses.get(t, 0) == least])
+        starts = windows.get(track) or [0.0]
+        section = (uses.get(track, 0) // USES_PER_SECTION) % len(starts)
+        music, music_start = os.path.join(audio_dir, track), starts[section]
     return {
         "speeds": speeds,
         "changed_parts": sorted(i + 1 for i in changed),
         "filter": rng.choice(list(FILTERS)),
         "caption_style": rng.choice(list(CAPTION_STYLES)),
-        "music": os.path.join(audio_dir, rng.choice(tracks)) if tracks else None,
+        "mirror": rng.random() < 0.5,
+        "music": music,
+        "music_start": music_start,
+        "music_section": section,
     }
 
 
@@ -204,13 +221,18 @@ def render(video, words, v, out, rng, music_level_lufs=-30):
         fc.append(f"[0:a]atrim={s:.3f}:{e:.3f},asetpts=PTS-STARTPTS" + (f",atempo={sp}" if sp != 1 else "") + f"[a{i}]")
     n = len(parts)
     fc.append("".join(f"[v{i}][a{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=1[vc][voice]")
-    fc.append(f"[vc]{color_chain(v['filter'], rng)},ass='{ass}',format=yuv420p[vout]")
+    fonts = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+    if v.get("mirror"):  # mirror only the face cam; flipping the chart would put its text and candles backwards
+        top = int(H * FACE_CAM_HEIGHT) // 2 * 2
+        fc.append(f"[vc]split[vfull][vtop];[vtop]crop=iw:{top}:0:0,hflip[vflip];[vfull][vflip]overlay=0:0[vm]")
+        src = "[vm]"
+    else:
+        src = "[vc]"
+    fc.append(f"{src}{color_chain(v['filter'], rng)},ass='{ass}':fontsdir='{fonts}',format=yuv420p[vout]")
 
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", video]
     if v["music"]:
-        mdur = duration(v["music"])
-        offset = rng.uniform(0, max(0, mdur - 40)) if mdur > 45 else 0
-        cmd += ["-stream_loop", "-1", "-ss", f"{offset:.2f}", "-i", v["music"]]
+        cmd += ["-stream_loop", "-1", "-ss", f"{v.get('music_start', 0):.2f}", "-i", v["music"]]
         fc.append(f"[1:a]aformat=sample_rates=44100:channel_layouts=stereo,loudnorm=I={music_level_lufs}:TP=-6[bg]")
         fc.append("[voice]aformat=sample_rates=44100:channel_layouts=stereo[vo]")
         fc.append("[vo][bg]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[aout]")
@@ -243,32 +265,50 @@ RAW_BASE = "https://raw.githubusercontent.com/tylermacbook72-arch/reel-files"
 STAGING = "staging"
 
 
-def stage_on_github(path):
-    """Put the finished reel on the public `staging` branch and return a raw link to it.
-
-    Instagram only applies trial mode when it downloads the video from a public URL
-    (the direct-upload method silently ignores trial_params), so each reel is
-    committed here just long enough for Instagram to fetch it. The previous reel
-    file is removed in the same commit.
-    """
+def open_staging():
+    """Clone the staging branch (creating it on first run). Returns (dir, state)."""
     d = tempfile.mkdtemp()
-    run = lambda *a: subprocess.run(a, cwd=d, check=True, capture_output=True, text=True).stdout.strip()
     try:
         subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", STAGING, REPO_URL, d], check=True, capture_output=True)
-    except subprocess.CalledProcessError:  # first run: create the branch from main
+    except subprocess.CalledProcessError:  # first run: start the branch from main
         subprocess.run(["git", "clone", "-q", "--depth", "1", REPO_URL, d], check=True, capture_output=True)
-        run("git", "checkout", "-q", "-b", STAGING)
+        subprocess.run(["git", "checkout", "-q", "-b", STAGING], cwd=d, check=True)
+    sp = os.path.join(d, "state.json")
+    state = json.load(open(sp)) if os.path.exists(sp) else {}
+    return d, state
+
+
+def stage_on_github(d, path, state):
+    """Put the finished reel (and the updated usage memory) on the public staging branch.
+
+    Instagram only applies trial mode when it downloads the video from a public URL
+    (the direct-upload method silently ignores trial_params). The previous reel file
+    is removed in the same commit. Returns the raw link to the new reel.
+    """
+    run = lambda *a: subprocess.run(a, cwd=d, check=True, capture_output=True, text=True).stdout.strip()
     for f in os.listdir(d):
         if f.endswith(".mp4"):
             run("git", "rm", "-q", f)
     name = f"reel-{time.strftime('%Y%m%d-%H%M%S')}.mp4"
     subprocess.run(["cp", path, os.path.join(d, name)], check=True)
-    run("git", "add", name)
+    json.dump(state, open(os.path.join(d, "state.json"), "w"), indent=1)
+    run("git", "add", name, "state.json")
     run("git", "-c", "user.name=Reel Poster", "-c", "user.email=tylermacbook72@gmail.com", "commit", "-q", "-m",
         "Stage reel for Instagram upload\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
         "Claude-Session: https://claude.ai/code/session_01DmfryRezHpK1ci6Zyf546s")
     run("git", "push", "-q", "origin", f"HEAD:{STAGING}")
     return f"{RAW_BASE}/{run('git', 'rev-parse', 'HEAD')}/{name}"
+
+
+def save_state(d, state, message):
+    """Commit just the memory file (used after a successful post to record the media id)."""
+    run = lambda *a: subprocess.run(a, cwd=d, check=True, capture_output=True, text=True).stdout.strip()
+    json.dump(state, open(os.path.join(d, "state.json"), "w"), indent=1)
+    run("git", "add", "state.json")
+    run("git", "-c", "user.name=Reel Poster", "-c", "user.email=tylermacbook72@gmail.com", "commit", "-q", "-m",
+        message + "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
+        "Claude-Session: https://claude.ai/code/session_01DmfryRezHpK1ci6Zyf546s")
+    run("git", "push", "-q", "origin", f"HEAD:{STAGING}")
 
 
 def post_trial_reel(video_url, caption=CAPTION):
@@ -295,36 +335,49 @@ def post_trial_reel(video_url, caption=CAPTION):
 
 
 def main():
+    here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
-    ap.add_argument("--video", required=True)
-    ap.add_argument("--words", required=True, help="word timings json from transcribe.py")
-    ap.add_argument("--audio-dir", help="folder of background tracks")
+    ap.add_argument("--video", default=os.path.join(here, "media", "video.mp4"))
+    ap.add_argument("--words", default=os.path.join(here, "media", "words.json"))
+    ap.add_argument("--audio-dir", default=os.path.join(here, "media", "audio"))
+    ap.add_argument("--windows", default=os.path.join(here, "media", "audio_windows.json"))
     ap.add_argument("--caption", default=CAPTION)
-    ap.add_argument("--out", default="variation.mp4")
+    ap.add_argument("--out", default=os.path.join(tempfile.gettempdir(), "reel.mp4"))
     ap.add_argument("--seed", type=int)
     ap.add_argument("--filter", choices=list(FILTERS))
     ap.add_argument("--caption-style", choices=list(CAPTION_STYLES))
-    ap.add_argument("--dry-run", action="store_true", help="render only, don't post")
+    ap.add_argument("--dry-run", action="store_true", help="render only: no GitHub, no Instagram")
     a = ap.parse_args()
 
     rng = random.Random(a.seed)
     words = load_words(a.words)
     parts = split_parts(words, duration(a.video))
-    v = pick_variation(rng, parts, a.audio_dir)
+    windows = json.load(open(a.windows)) if os.path.exists(a.windows) else {}
+    d, state = (None, {}) if a.dry_run else open_staging()
+    v = pick_variation(rng, parts, a.audio_dir, state, windows)
     if a.filter:
         v["filter"] = a.filter
     if a.caption_style:
         v["caption_style"] = a.caption_style
-    print(f"{len(parts)} parts | sped-up parts: " +
-          ", ".join(f"#{i} at {v['speeds'][i - 1]}x" for i in v["changed_parts"]) +
-          f" | filter: {v['filter']} | captions: {v['caption_style']} | music: {os.path.basename(v['music'] or 'none')}")
+    track = os.path.basename(v["music"] or "none")
+    summary = (f"{len(parts)} parts | sped-up: " + ", ".join(f"#{i} at {v['speeds'][i - 1]}x" for i in v["changed_parts"]) +
+               f" | filter: {v['filter']} | captions: {v['caption_style']} | mirrored: {'yes' if v['mirror'] else 'no'}"
+               f" | music: {track} from {int(v['music_start'] // 60)}:{int(v['music_start'] % 60):02d}"
+               f" (section {(v['music_section'] or 0) + 1})")
+    print(summary)
     render(a.video, words, v, a.out, rng)
-    print(f"Rendered {a.out} ({duration(a.out):.1f}s)")
+    print(f"Rendered {a.out} ({duration(a.out):.1f}s, {os.path.getsize(a.out) / 1e6:.1f} MB)")
     if a.dry_run:
         return
-    url = stage_on_github(a.out)
+    if v["music"]:
+        state.setdefault("audio_uses", {})[track] = state["audio_uses"].get(track, 0) + 1
+    url = stage_on_github(d, a.out, state)
     print("Staged at", url)
-    print("Posted trial reel, media id:", post_trial_reel(url, a.caption))
+    media_id = post_trial_reel(url, a.caption)
+    state.setdefault("history", []).append({"time": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()), "media_id": media_id,
+                                             "summary": summary})
+    save_state(d, state, "Record posted reel")
+    print("Posted trial reel, media id:", media_id)
 
 
 if __name__ == "__main__":

@@ -26,5 +26,8 @@ The Meta access key is never stored in this repo; the cloud environment adds it 
 | `transcribe.py` | One-time: turns the base video's speech into word timings |
 | `media/words.json` | Word timings with your corrections (`words.orig.json` = raw transcript) |
 | `make_previews.py` | Builds the caption style preview sheet |
+| `run.sh` | One scheduled post: update, download media, render, post |
+| `fetch_media.py` | Downloads the base video + audios from Drive (list in `media/drive_files.json`) |
+| `find_best_parts.py` | Ranks the best sections of each audio into `media/audio_windows.json` |
 
 The base video and audio tracks live in the Google Drive folder "Bernard Posting Trial", not here.
