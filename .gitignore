@@ -1,0 +1,6 @@
+# videos and audio are kept in Google Drive, not here
+media/*.mp4
+media/*.m4a
+media/audio*/
+samples/
+__pycache__/
