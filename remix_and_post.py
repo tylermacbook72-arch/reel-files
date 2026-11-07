@@ -31,6 +31,7 @@ import urllib.request
 
 GRAPH = "https://graph.facebook.com/v27.0"
 IG_USER_ID = os.environ.get("IG_USER_ID", "17841480164538536")  # @futurescorey
+CAPTION = "Follow @futurescorey for free trading info"  # every trial reel uses exactly this
 AUTH = {"Authorization": "Bearer proxy-injected"}  # the proxy replaces this
 AUDIO_EXT = (".mp3", ".m4a", ".wav", ".aac", ".ogg", ".mp4", ".mov")
 
@@ -270,7 +271,9 @@ def stage_on_github(path):
     return f"{RAW_BASE}/{run('git', 'rev-parse', 'HEAD')}/{name}"
 
 
-def post_trial_reel(video_url, caption):
+def post_trial_reel(video_url, caption=CAPTION):
+    if caption != CAPTION:
+        sys.exit(f"Refusing to post: caption must be exactly {CAPTION!r}")
     c = api("POST", f"{GRAPH}/{IG_USER_ID}/media", json_body={
         "media_type": "REELS",
         "video_url": video_url,
@@ -296,7 +299,7 @@ def main():
     ap.add_argument("--video", required=True)
     ap.add_argument("--words", required=True, help="word timings json from transcribe.py")
     ap.add_argument("--audio-dir", help="folder of background tracks")
-    ap.add_argument("--caption", default="Follow @futurescorey for free trading info")
+    ap.add_argument("--caption", default=CAPTION)
     ap.add_argument("--out", default="variation.mp4")
     ap.add_argument("--seed", type=int)
     ap.add_argument("--filter", choices=list(FILTERS))
