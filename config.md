@@ -1,6 +1,6 @@
 # Trial reel auto-poster settings
 - Account: @futurescorey (IG user 17841480164538536), posts as TRIAL REELS
-- Post caption (every post): Follow @futurescorey for free trading info
+- Post caption (every post): Follow @futurescorey for free trading info 📚
 - Schedule (America/New_York): 11:00 AM, 2:00 PM, 5:00 PM, 8:00 PM, 11:00 PM
 - Status: LIVE (user said go on 2026-11-07)
 

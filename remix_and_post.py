@@ -31,7 +31,7 @@ import urllib.request
 
 GRAPH = "https://graph.facebook.com/v27.0"
 IG_USER_ID = os.environ.get("IG_USER_ID", "17841480164538536")  # @futurescorey
-CAPTION = "Follow @futurescorey for free trading info"  # every trial reel uses exactly this
+CAPTION = "Follow @futurescorey for free trading info 📚"  # every trial reel uses exactly this
 AUTH = {"Authorization": "Bearer proxy-injected"}  # the proxy replaces this
 AUDIO_EXT = (".mp3", ".m4a", ".wav", ".aac", ".ogg", ".mp4", ".mov")
 
