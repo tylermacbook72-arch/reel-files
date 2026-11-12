@@ -312,7 +312,13 @@ def save_state(d, state, message):
     run("git", "-c", "user.name=Reel Poster", "-c", "user.email=tylermacbook72@gmail.com", "commit", "-q", "-m",
         message + "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n"
         "Claude-Session: https://claude.ai/code/session_01DmfryRezHpK1ci6Zyf546s")
-    run("git", "push", "-q", "origin", f"HEAD:{STAGING}")
+    for attempt in range(3):  # GitHub sometimes answers a push with a temporary server error
+        try:
+            run("git", "push", "-q", "origin", f"HEAD:{STAGING}")
+            return
+        except subprocess.CalledProcessError:
+            time.sleep(20)
+    print("warning: reel was posted, but recording it in state.json failed (GitHub push error)")
 
 
 def post_trial_reel(video_url, caption=CAPTION):
