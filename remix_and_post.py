@@ -237,8 +237,6 @@ def render(video, words, v, out, rng, music_level_lufs=-30):
         src = "[vm]"
     else:
         src = "[vc]"
-    fc.append(f"{src}{color_chain(v['filter'], rng)},ass='{ass}':fontsdir='{fonts}',format=yuv420p[vout]")
-
     cmd = ["ffmpeg", "-y", "-v", "error", "-i", video]
     if v["music"]:
         cmd += ["-stream_loop", "-1", "-ss", f"{v.get('music_start', 0):.2f}", "-i", v["music"]]
@@ -247,6 +245,22 @@ def render(video, words, v, out, rng, music_level_lufs=-30):
         fc.append("[vo][bg]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[aout]")
     else:
         fc.append("[voice]anull[aout]")
+
+    # "tap to follow" motion graphic over the chart, starting on "So follow..." and held to the end
+    fo_file = VIDEO_SETTINGS.get("follow_overlay")
+    fo_path = os.path.join(os.path.dirname(os.path.abspath(video)), fo_file) if fo_file else None
+    fc.append(f"{src}{color_chain(v['filter'], rng)}[vcol]")
+    if fo_path and os.path.exists(fo_path):
+        idx = 2 if v["music"] else 1
+        cmd += ["-i", fo_path]
+        t0 = remap(VIDEO_SETTINGS.get("follow_start", 0), parts, speeds)
+        y = int(H * VIDEO_SETTINGS.get("follow_y", 0.57))
+        fc.append(f"[{idx}:v]format=argb,setpts=PTS-STARTPTS+{t0:.3f}/TB[fo]")
+        fc.append(f"[vcol][fo]overlay=x=(W-w)/2:y={y}:eof_action=repeat:shortest=1:enable='gte(t,{t0:.3f})'[vov]")
+        last = "[vov]"
+    else:
+        last = "[vcol]"
+    fc.append(f"{last}ass='{ass}':fontsdir='{fonts}',format=yuv420p[vout]")
 
     cmd += ["-filter_complex", ";".join(fc), "-map", "[vout]", "-map", "[aout]",
             "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-profile:v", "high", "-r", "30",

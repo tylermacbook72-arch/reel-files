@@ -27,6 +27,7 @@ The Meta access key is never stored in this repo; the cloud environment adds it 
 | `media/words.json` | Word timings with your corrections (`words.orig.json` = raw transcript) |
 | `make_previews.py` | Builds the caption style preview sheet |
 | `run.sh` | One scheduled post: update, download media, render, post |
+| `make_follow_overlay.py` | Builds the end "tap to follow" animation (`media/follow_overlay.mov`) |
 | `fetch_media.py` | Downloads the base video + audios from Drive (list in `media/drive_files.json`) |
 | `find_best_parts.py` | Ranks the best sections of each audio into `media/audio_windows.json` |
 

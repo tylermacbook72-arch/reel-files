@@ -2,5 +2,8 @@
  "video_file": "video2.mp4",
  "words_file": "words2.json",
  "face_cam_height": 0.391,
- "seam": 0.394
+ "seam": 0.394,
+ "follow_overlay": "follow_overlay.mov",
+ "follow_start": 39.36,
+ "follow_y": 0.575
 }
