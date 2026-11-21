@@ -37,11 +37,15 @@ F_BOLD = font(os.path.join(here, "fonts", "Inter-Bold.otf"), 46)
 F_SUB = font("/usr/share/fonts/opentype/inter/Inter-Medium.otf", 32)
 F_BTN = font(os.path.join(here, "fonts", "Inter-Bold.otf"), 36)
 
-# avatar: square crop around the face in the face cam, circle-masked
+# avatar: the Instagram profile picture (media/pfp.jpg) if present, else a face crop from the video
 tmp = tempfile.mkdtemp()
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(FACE_T), "-i", VIDEO, "-frames:v", "1",
-                "-vf", "crop=520:520:280:110,scale=180:180", os.path.join(tmp, "a.png")], check=True)
-avatar = Image.open(os.path.join(tmp, "a.png")).convert("RGBA")
+PFP = os.path.join(here, "media", "pfp.jpg")
+if os.path.exists(PFP):
+    avatar = Image.open(PFP).convert("RGBA").resize((180, 180), Image.LANCZOS)
+else:
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(FACE_T), "-i", VIDEO, "-frames:v", "1",
+                    "-vf", "crop=520:520:280:110,scale=180:180", os.path.join(tmp, "a.png")], check=True)
+    avatar = Image.open(os.path.join(tmp, "a.png")).convert("RGBA")
 mask = Image.new("L", avatar.size, 0)
 ImageDraw.Draw(mask).ellipse((0, 0, 179, 179), fill=255)
 avatar.putalpha(mask)
