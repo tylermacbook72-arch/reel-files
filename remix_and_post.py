@@ -68,8 +68,11 @@ def color_chain(name, rng):
 WHITE, YELLOW, GREEN, RED = "&HFFFFFF", "&H00D7FF", "&H5AF23C", "&H3B3BFF"
 COLORS = {"White": WHITE, "Yellow": YELLOW, "Green": GREEN, "Red": RED}
 BLACK = "&H000000"
-SEAM = 0.365  # line between face cam and chart
-FACE_CAM_HEIGHT = 0.3625  # face cam is the top 36% of the base video
+_SETTINGS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media", "video_settings.json")
+VIDEO_SETTINGS = json.load(open(_SETTINGS_PATH)) if os.path.exists(_SETTINGS_PATH) else {}
+FACE_CAM_HEIGHT = VIDEO_SETTINGS.get("face_cam_height", 0.3625)  # share of the frame taken by the face cam
+SEAM = VIDEO_SETTINGS.get("seam", 0.365)  # caption line: where the face cam meets the chart
+LOWER = SEAM - 0.055  # lower-third styles sit just above the seam, on the face cam
 
 CAPTION_STYLES = {
     "Bold White": dict(font="Montserrat Black", size=78, color=WHITE, outline=BLACK, bord=5, shadow=0, pos=SEAM, upper=True, words=3, hl=None),
@@ -85,10 +88,10 @@ for cname, col in COLORS.items():   # Roboto, 2 words, current word lit up
     if cname != "White":
         CAPTION_STYLES[f"{cname} Accent"] = dict(font="Roboto Black", size=80, color=WHITE, outline=BLACK, bord=5, shadow=0, pos=SEAM, upper=True, words=2, hl=col)
 CAPTION_STYLES.update({
-    "Clean Lower": dict(font="Inter Bold", size=64, color=WHITE, outline=BLACK, bord=4, shadow=4, pos=0.31, upper=False, words=4, hl=None),
+    "Clean Lower": dict(font="Inter Bold", size=64, color=WHITE, outline=BLACK, bord=4, shadow=4, pos=LOWER, upper=False, words=4, hl=None),
     "Boxed":       dict(font="Inter Black", size=66, color=WHITE, outline=BLACK, bord=0, shadow=0, pos=SEAM, upper=False, words=3, hl=None, box=True),
     "Center Big":  dict(font="Montserrat ExtraBold", size=92, color=WHITE, outline=BLACK, bord=5, shadow=2, pos=SEAM - 0.005, upper=True, words=2, hl=None),
-    "Soft Shadow": dict(font="Roboto Medium", size=68, color=WHITE, outline=BLACK, bord=4, shadow=5, pos=0.31, upper=False, words=4, hl=None),
+    "Soft Shadow": dict(font="Roboto Medium", size=68, color=WHITE, outline=BLACK, bord=4, shadow=5, pos=LOWER, upper=False, words=4, hl=None),
 })
 
 
@@ -143,7 +146,9 @@ def split_parts(words, total):
     """Split into spoken parts at sentence ends. Returns [(start, end)]."""
     starts = [0.0]
     for i, w in enumerate(words[:-1]):
-        if re.search(r"[.?!]$", w["w"]):
+        sentence_end = re.search(r"[.?!]$", w["w"])
+        long_clause = w["w"].endswith(",") and w["e"] - starts[-1] >= 2.0  # break long sentences at commas
+        if sentence_end or long_clause:
             starts.append(words[i + 1]["s"])
     ends = starts[1:] + [total]
     return list(zip(starts, ends))
@@ -347,8 +352,8 @@ def post_trial_reel(video_url, caption=CAPTION):
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
-    ap.add_argument("--video", default=os.path.join(here, "media", "video.mp4"))
-    ap.add_argument("--words", default=os.path.join(here, "media", "words.json"))
+    ap.add_argument("--video", default=os.path.join(here, "media", VIDEO_SETTINGS.get("video_file", "video.mp4")))
+    ap.add_argument("--words", default=os.path.join(here, "media", VIDEO_SETTINGS.get("words_file", "words.json")))
     ap.add_argument("--audio-dir", default=os.path.join(here, "media", "audio"))
     ap.add_argument("--windows", default=os.path.join(here, "media", "audio_windows.json"))
     ap.add_argument("--caption", default=CAPTION)

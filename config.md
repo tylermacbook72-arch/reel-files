@@ -1,7 +1,7 @@
 # Trial reel auto-poster settings
 - Account: @futurescorey (IG user 17841480164538536), posts as TRIAL REELS
 - Post caption (every post): Follow @futurescorey for free trading info 📚
-- Schedule (America/New_York): 2:00 PM and 8:00 PM (cut from 5/day on 2026-11-17 after duplicate flags)
+- Schedule (America/New_York): 11:00 AM, 2:00 PM, 5:00 PM, 8:00 PM, 11:00 PM (back to 5/day on 2026-11-21 with Video 2)
 - Status: LIVE (user said go on 2026-11-07)
 
 ## Per-reel changes (nothing cut, trimmed or added beyond these)
@@ -23,3 +23,8 @@
 
 ## Mirroring
 - Half the reels mirror the face cam (top part) only; the chart stays unflipped so its text and candles read correctly
+
+## Base video
+- Current: "Video 2" from Drive (media/video_settings.json: video2.mp4, words2.json, face cam = top 39.1%)
+- Transcript fixes: "80 %" -> "86%", "top step" -> "Topstep" (raw transcript in words2.orig.json)
+- Long sentences are also split at commas (14 parts)

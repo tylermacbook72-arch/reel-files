@@ -10,7 +10,7 @@ def get(fid, out):
     subprocess.run(["curl", "-sSL", "--retry", "3", "-o", tmp, URL.format(fid)], check=True)
     os.replace(tmp, out)
 os.makedirs(os.path.join(here, "media", "audio"), exist_ok=True)
-get(m["video"]["id"], os.path.join(here, "media", "video.mp4"))
+get(m["video"]["id"], os.path.join(here, "media", m["video"].get("file", "video.mp4")))
 for a in m["audio"]:
     slug = re.sub(r"[^a-z0-9]+", "_", a["name"].lower()).strip("_")
     out = os.path.join(here, "media", "audio", slug + ".m4a")
