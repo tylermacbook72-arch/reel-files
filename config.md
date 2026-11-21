@@ -28,3 +28,4 @@
 - Current: "Video 2" from Drive (media/video_settings.json: video2.mp4, words2.json, face cam = top 39.1%)
 - Transcript fixes: "80 %" -> "86%", "top step" -> "Topstep" (raw transcript in words2.orig.json)
 - Long sentences are also split at commas (14 parts)
+- End graphic: "tap to follow" card (make_follow_overlay.py -> media/follow_overlay.mov) pops up on "So follow..." and stays to the end
