@@ -25,7 +25,8 @@
 - Half the reels mirror the face cam (top part) only; the chart stays unflipped so its text and candles read correctly
 
 ## Base video
-- Current: "Video 2" from Drive (media/video_settings.json: video2.mp4, words2.json, face cam = top 39.1%)
+- Current: original "Video" from Drive (media/video_settings.json: video.mp4, words.json, face cam = top 36.25%), with the follow animation from "So follow" (33.64s)
+- Video 2 settings (if switching back): video2.mp4, words2.json, face_cam_height 0.391, seam 0.394, follow_start 39.36
 - Transcript fixes: "80 %" -> "86%", "top step" -> "Topstep" (raw transcript in words2.orig.json)
 - Long sentences are also split at commas (14 parts)
 - End graphic: "tap to follow" card (make_follow_overlay.py -> media/follow_overlay.mov) pops up on "So follow..." and stays to the end
