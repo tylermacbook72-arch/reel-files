@@ -2,7 +2,7 @@
 - Account: @futurescorey (IG user 17841480164538536), posts as TRIAL REELS
 - Post caption (every post): Follow @futurescorey for free trading info 📚
 - Schedule (America/New_York): 11:00 AM, 2:00 PM, 5:00 PM, 8:00 PM, 11:00 PM (back to 5/day on 2026-11-21 with Video 2)
-- Status: LIVE (user said go on 2026-11-07)
+- Status: PAUSED on 2026-11-23 (Instagram reported the account as restricted; user asked to pause)
 
 ## Per-reel changes (nothing cut, trimmed or added beyond these)
 - Speed: split the ~39s video into its spoken parts (by pauses in the voice);
