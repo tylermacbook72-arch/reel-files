@@ -2,7 +2,7 @@
 - Account: @futurescorey (IG user 17841480164538536), posts as TRIAL REELS
 - Post caption (every post): Follow @futurescorey for free trading info 📚
 - Schedule (America/New_York): 11:00 AM, 2:00 PM, 5:00 PM, 8:00 PM, 11:00 PM (back to 5/day on 2026-11-21 with Video 2)
-- Status: PAUSED on 2026-11-24 (user asked to pause)
+- Status: LIVE (resumed 2026-11-26 with the new Video 2; paused 2026-11-24)
 
 ## Per-reel changes (nothing cut, trimmed or added beyond these)
 - Speed: split the ~39s video into its spoken parts (by pauses in the voice);
@@ -25,7 +25,7 @@
 - Half the reels mirror the face cam (top part) only; the chart stays unflipped so its text and candles read correctly
 
 ## Base video
-- Current: original "Video" from Drive (media/video_settings.json: video.mp4, words.json, face cam = top 36.25%), with the follow animation from "So follow" (33.64s)
+- Current: new "Video 2" uploaded 2026-11-26 (video3.mp4; same voice track as the original, so it reuses words.json; face cam = top 36.25%). It has its own built-in follow graphic, so the added follow animation is OFF for it.
 - Video 2 settings (if switching back): video2.mp4, words2.json, face_cam_height 0.391, seam 0.394, follow_start 39.36
 - Transcript fixes: "80 %" -> "86%", "top step" -> "Topstep" (raw transcript in words2.orig.json)
 - Long sentences are also split at commas (14 parts)
